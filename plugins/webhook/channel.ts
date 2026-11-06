@@ -14,9 +14,19 @@ function fill(template: unknown, text: string): unknown {
   return template;
 }
 
-function words(card: Card) {
+function words(card: Card, platform = "") {
+  const source = platform === "wecom" && card.rule ? `来源：${card.rule}` : "";
+  if (
+    platform === "wecom" &&
+    card.kind === "notice" &&
+    card.state === "open" &&
+    card.options.length === 1 &&
+    card.options[0] === "已处理" &&
+    card.link
+  )
+    return [card.title, source, card.text, `[点击处理](${card.link})`].filter(Boolean).join("\n\n");
   const choices = card.options.map((option, index) => `${index + 1}. ${option}`).join("\n");
-  const parts = [card.title, card.text, ...(card.state === "open" ? [choices, card.link] : [])];
+  const parts = [card.title, source, card.text, ...(card.state === "open" ? [choices, card.link] : [])];
   return parts.filter(Boolean).join("\n\n");
 }
 
@@ -42,7 +52,7 @@ export default async function webhook({ hub, options, log, signal }: ChannelCont
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
           options.platform
-            ? payload(String(options.platform), words(card))
+            ? payload(String(options.platform), words(card, String(options.platform)))
             : fill(options.body ?? { text: "{text}" }, words(card)),
         ),
         signal: AbortSignal.timeout(30_000),

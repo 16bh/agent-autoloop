@@ -15,10 +15,12 @@ const card: any = {
   id: 1,
   version: 1,
   ref: null,
+  kind: "notice",
+  rule: "项目巡检",
   state: "open",
   title: "要处理",
   text: "正文 @everyone <@U1> https://git.example/mr/1",
-  options: [],
+  options: ["已处理"],
   link: "https://example.com/c/a",
 };
 for (const platform of ["dingtalk", "wecom", "slack", "discord"])
@@ -70,9 +72,12 @@ for (const platform of ["dingtalk", "wecom", "slack", "discord"])
     }
     if (platform === "wecom") {
       assert.equal(received[0].msgtype, "markdown");
+      assert.match(received[0].markdown.content, /来源：项目巡检/);
       assert.match(received[0].markdown.content, /正文/);
       assert.match(received[0].markdown.content, /\[打开链接\]\(https:\/\/git\.example\/mr\/1\)/);
-      assert.match(received[0].markdown.content, /\[打开链接\]\(https:\/\/example\.com\/c\/a\)/);
+      assert.match(received[0].markdown.content, /\[点击处理\]\(https:\/\/example\.com\/c\/a\)/);
+      assert.doesNotMatch(received[0].markdown.content, /1\. 已处理/);
+      assert.doesNotMatch(received[0].markdown.content, /\[打开链接\]\(https:\/\/example\.com\/c\/a\)/);
       assert.deepEqual(calls, ["delivered", "failed"]);
     }
     if (platform === "slack") {
