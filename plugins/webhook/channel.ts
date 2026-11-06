@@ -14,8 +14,14 @@ function fill(template: unknown, text: string): unknown {
   return template;
 }
 
+// WeCom draws its messages as Markdown: a link or a tag in what an Agent wrote would be drawn, and could pass off a link
+// of its own as the card's. Full-width look-alikes keep the words and stop the markup; bare addresses still become links.
+const asWords = (text: string) => text.replaceAll("](", "］(").replaceAll("<", "＜");
+
 function words(card: Card, platform = "") {
-  const source = platform === "wecom" && card.rule ? `来源：${card.rule}` : "";
+  if (platform === "wecom")
+    card = { ...card, title: asWords(card.title), text: asWords(card.text), options: card.options.map(asWords) };
+  const source = platform === "wecom" && card.rule ? `来源：${asWords(card.rule)}` : "";
   if (
     platform === "wecom" &&
     card.kind === "notice" &&
