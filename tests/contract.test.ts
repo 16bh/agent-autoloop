@@ -127,6 +127,28 @@ test("the first line says how it ended", () => {
   assert.deepEqual(readMessage(""), { outcome: "failed", error: "没留下结果" });
 });
 
+test("a receipt-shaped json block without the trusted marker is repaired, not silently ignored or executed", () => {
+  const message = readMessage(
+    '完成计划\n```json\n{"later":[{"key":"continue","at":"2026-11-06T16:00:00+08:00","about":"继续"}]}\n```',
+  );
+  assert.match(message.problem!, /agent-autoloop/);
+  assert.equal(message.receipt, undefined);
+});
+
+test("ordinary json that happens to contain a receipt field stays ordinary output", () => {
+  const message = readMessage('完成分析\n```json\n{"events":[{"name":"launch"}],"count":1}\n```');
+  assert.equal(message.problem, undefined);
+  assert.equal(message.receipt, undefined);
+});
+
+test("a correctly marked receipt wins even when ordinary json follows it", () => {
+  const message = readMessage(
+    '完成分析\n```agent-autoloop\n{"later":[{"key":"k","cancel":true}]}\n```\n```json\n{"events":[],"count":0}\n```',
+  );
+  assert.equal(message.problem, undefined);
+  assert.deepEqual(message.receipt, { later: [{ key: "k", cancel: true }] });
+});
+
 test("the receipt is the last code block of its kind, wherever it sits", () => {
   const body =
     '做完了\n\n```js\nconsole.log(1)\n```\n\n```agent-autoloop\n{"notice":[{"title":"看一眼","text":"这个"}]}\n```\n';

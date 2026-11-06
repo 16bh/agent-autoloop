@@ -10,6 +10,7 @@ const FAILED = ["没跑成", "FAILED"];
 const NOTHING = ["没事可做", "NOTHING"];
 const RECEIPT_FIELDS = ["ask", "notice", "resolve", "later", "events"];
 const BLOCK = /```agent-autoloop[ \t]*\r?\n([\s\S]*?)```/g;
+const JSON_BLOCK = /```json[ \t]*\r?\n([\s\S]*?)```/g;
 const unique = <T>(items: T[]) => [...new Set(items)];
 
 function describeEvent({ sourceName, type, subject, link }: Job["context"]["events"][number]) {
@@ -105,7 +106,26 @@ export function readMessage(said: string): Message {
   if (failed) message = { outcome: "failed", error: rest(failed) || "没说原因" };
   else if (nothing) message = { outcome: "nothing", summary: rest(nothing) };
   const block = blocks.at(-1)?.[1];
-  if (block === undefined) return message;
+  if (block === undefined) {
+    const candidate = [...said.matchAll(JSON_BLOCK)].at(-1)?.[1];
+    if (candidate !== undefined) {
+      try {
+        const value = JSON.parse(candidate);
+        const keys = value && typeof value === "object" && !Array.isArray(value) ? Object.keys(value) : [];
+        if (
+          value &&
+          typeof value === "object" &&
+          !Array.isArray(value) &&
+          keys.length > 0 &&
+          keys.every((key) => RECEIPT_FIELDS.includes(key))
+        )
+          return { ...message, problem: "疑似回执的 JSON 代码块必须标记为 agent-autoloop" };
+      } catch {
+        // Unrelated JSON remains ordinary output.
+      }
+    }
+    return message;
+  }
   let receipt: unknown;
   try {
     receipt = JSON.parse(block);
