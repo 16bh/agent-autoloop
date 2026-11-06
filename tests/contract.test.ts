@@ -62,6 +62,11 @@ test("the prompt says what to do and how to end, but not what anyone wrote", () 
   assert.match(text, /没跑成：/);
   assert.match(text, /没事可做：/);
   assert.match(text, /```agent-autoloop/);
+  assert.match(text, /已完成/);
+  assert.match(text, /已核实/);
+  assert.match(text, /需要决定/);
+  assert.match(text, /选项影响/);
+  assert.match(text, /系统、服务或模块/);
   assert.ok(!text.includes("王某"));
   assert.ok(!text.includes("管理员权限"));
   assert.ok(!text.includes('"events"'), "a rule that can't emit isn't offered it");
@@ -132,6 +137,14 @@ test("a receipt-shaped json block without the trusted marker is repaired, not si
     '完成计划\n```json\n{"later":[{"key":"continue","at":"2026-11-06T16:00:00+08:00","about":"继续"}]}\n```',
   );
   assert.match(message.problem!, /agent-autoloop/);
+  assert.equal(message.receipt, undefined);
+});
+
+test("an unclosed agent-autoloop receipt is repaired instead of silently losing its question", () => {
+  const message = readMessage(
+    '待你确认通知归属\n```agent-autoloop\n{"ask":[{"title":"由哪个服务负责","text":"请选择归属","options":["tv-job","其他服务"]}]}\n``',
+  );
+  assert.match(message.problem!, /没有正确结束/);
   assert.equal(message.receipt, undefined);
 });
 

@@ -55,15 +55,16 @@ export function promptFor(job: Job, contextFile: string) {
     "需要中台做事时，在最后一条消息的末尾附一个回执：" +
       "一个标记为 agent-autoloop 的代码块，里面是 JSON，用不到的字段不写；什么都不需要就不附。",
     "```agent-autoloop",
-    `{"ask":[{"title":"一句话说要决定什么","text":"三行以内","options":["选项一","选项二"],"recommend":0,\
+    `{"ask":[{"title":"一句话说要决定什么","text":"已完成：...\\n已核实：...\\n需要决定：...\\n选项影响：...","options":["选项一","选项二"],"recommend":0,\
 "about":"留给接着干的自己：背景，每个选项具体怎么做","key":"这件事的固定名字"}],
  "notice":[{"title":"一句话","text":"非他亲自做不可的事：要他做什么"}],
  "resolve":[{"card":12,"reason":"在哪核实了已解决或本人已决定"}],
  "later":[{"key":"这次复查的固定名字","at":"带时区的时间，比如 2026-11-05T09:00:00+08:00",\
 "about":"到时候查什么、怎么算过"}]${emits}}`,
     "```",
-    "- ask 和 notice 会打断人，能不发就不发。写给不看代码、也看不到这一轮对话的人：" +
-      "出了什么事，现在恢复没有，有什么影响，要他做什么或你的建议。不写技术缩写、状态码、文件路径和内部编号。" +
+    "- ask 和 notice 会打断人，能不发就不发。ask 必须让没看过对话的人也能决定：text 分别写清已完成、已核实、需要决定、选项影响；" +
+      "涉及多个系统、服务或模块时，写出各自的业务名称、职责和关系，必要时附模块路径。不能确认的事实明确写未核实，不能用“旧服务”“两个服务”等指代。" +
+      "notice 要写清出了什么事、现在恢复没有、有什么影响、要他做什么或你的建议。不写无助于判断的技术缩写、状态码和内部编号。" +
       '确实要让他知道、但不用他做什么的 notice 才加 "fyi":true：它一样会推送，发完就结案，下一轮看不到。还没解决的事、没跑成的一轮不要加。',
     "- resolve 只结 open 里列出的卡片，要到原处核实过；一条里有几件事要全部核实才能结。" +
       "读不到依据、只是另一件事做成了，都不能算解决。还在等人的卡片不用重发，它一直开着。",
@@ -92,7 +93,8 @@ function fit(text: string, limit: number) {
 /** How the run ended is on the first line; what it wants of the hub in its last receipt. */
 export function readMessage(said: string): Message {
   const blocks = [...said.matchAll(BLOCK)];
-  const lines = said.replace(BLOCK, "").split("\n");
+  const withoutCompleteBlocks = said.replace(BLOCK, "");
+  const lines = withoutCompleteBlocks.split("\n");
   const firstLine = lines.map((line) => line.trim()).find(Boolean) ?? "";
   const first = firstLine
     .replace(/^[#>*\s]+/, "")
@@ -105,6 +107,9 @@ export function readMessage(said: string): Message {
   let message: Message = { outcome: "done", summary: first };
   if (failed) message = { outcome: "failed", error: rest(failed) || "没说原因" };
   else if (nothing) message = { outcome: "nothing", summary: rest(nothing) };
+  if (withoutCompleteBlocks.includes("```agent-autoloop")) {
+    return { ...message, problem: "agent-autoloop 回执代码块没有正确结束" };
+  }
   const block = blocks.at(-1)?.[1];
   if (block === undefined) {
     const candidate = [...said.matchAll(JSON_BLOCK)].at(-1)?.[1];
