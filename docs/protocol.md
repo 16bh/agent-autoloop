@@ -310,6 +310,8 @@ POST /v1/rules/巡检/run        { "subject": "#12", "reason": "看一眼" }    
 
 `/v1/state` 的 `spending.today`、`spending.week` 独立于分页，按规则时区的今天和过去 7 × 24 小时的完成时间汇总。每项含 `rounds`、`tokens`、`cost`、`missingTokens`、`missingCost`，后两项是没报对应用量的轮数；从未开始就取消的轮次不计入。
 
+首页还会返回尚未到期的 `timers`，每项包含 `rule`、`lane`、`key`、`about` 和 `at`；翻历史页时该字段为空。本人客户端可据此区分正常等待复查与已经没有后续动作的事项。
+
 安装与卸载不改变 HTTP 协议。`agent-autoloop --version` 显示版本与提交；`agent-autoloop uninstall` 确认后移除自身程序、链接和服务，始终保留规则、密钥和记录；`--yes` 只跳过确认。
 
 ## 失败时会怎样
