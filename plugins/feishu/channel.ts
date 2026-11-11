@@ -124,7 +124,7 @@ export default async function feishu({ hub, options, log, signal }: ChannelConte
   async function sendMessage(key: string, content: string) {
     const target = ["--user-id", owner, "--as", "bot", "--msg-type", "interactive"];
     const once = ["--idempotency-key", key];
-    return (await lark(["im", "+messages-send", ...target, ...once, "--content", "-"], content)).data
+    return (await lark(["im", "+messages-send", ...target, ...once, "--content", content], "")).data
       .message_id as string;
   }
 
