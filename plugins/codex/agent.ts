@@ -2,9 +2,15 @@
 // on disk, so a retry or an answer can go on in it, and the link opens it in the app.
 import { execFileSync } from "node:child_process";
 import { commandLine, powershell, psQuote } from "../../host/command.ts";
-import { findProgram, tail, type Adapter } from "../../worker/agents.ts";
+import { findProgram, tail, type Adapter, type Turn } from "../../worker/agents.ts";
 
 const SANDBOX = { read: "read-only", edit: "workspace-write", full: "danger-full-access" };
+const MCP_SERVER_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const MCP_TOOL_APPROVAL = new Set(["auto", "prompt", "writes", "approve"]);
+const validMcpApprovals = (turn: Turn) =>
+  Object.entries(turn.mcpToolApproval ?? {}).filter(
+    ([server, mode]) => MCP_SERVER_ID.test(server) && MCP_TOOL_APPROVAL.has(mode),
+  );
 export const IN_THE_APP = [
   "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
   "/Applications/Codex.app/Contents/Resources/codex",
@@ -37,6 +43,10 @@ export default {
       `sandbox_mode="${SANDBOX[turn.access]}"`,
       "-c",
       'approval_policy="never"',
+      ...validMcpApprovals(turn).flatMap(([server, mode]) => [
+        "-c",
+        `mcp_servers.${server}.default_tools_approval_mode="${mode}"`,
+      ]),
       ...(turn.resume ? [turn.resume] : []),
       "本轮通过后台 codex exec 运行，不要假定桌面应用的浏览器连接已带到本轮。" +
         "网页操作使用本轮实际可用的浏览器工具，或使用规则或 Skill 中已明确配置的浏览器入口。" +

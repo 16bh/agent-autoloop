@@ -195,7 +195,7 @@ GET /v1/work?claim=<这次领活的编号>&wait=50&running=7,8&capacity=1    Aut
 {
   "run": 12, "token": "…", "attempt": 1,
   "rule": { "name": "处理告警", "cwd": "~/code/shop", "skill": "run-ops", "prompt": "按其中……处理。", "title": "alert-{id}" },  // title 原样给接单程序，没写就没有
-  "agent": { "id": "claude", "name": "Claude Code", "use": "claude", "model": "…", "effort": "high", "access": "edit" },
+  "agent": { "id": "claude", "name": "Claude Code", "use": "claude", "model": "…", "effort": "high", "access": "edit", "mcpToolApproval": { "example-docs": "approve" } },
   "session": null,       // 尽量接着的会话：重派时是上一次的，回答来了是提问那一轮的，规则写了 resume 时是这个事项上一轮的。接不上就开新的，所以它只是优化
   "askFirst": ["删数据", "…"],
   "context": {           // 接单程序把它写成文件交给 Agent，都是资料
@@ -277,7 +277,7 @@ export default {
 
 `started` 表示 Agent 已经收下这一轮的提示词，无论后来跑完、出错还是进程没了都要带上。带了它，这一轮再出错就算没跑成，留在原会话由中台重派；不带，接着旧会话跑时的失败都当成接不上，开新会话把提示词再跑一遍。`finished` 表示这一轮真的结束了，过 30 秒还不退出就停掉它；后台任务还没跑完、Agent 还要回来接着干时不算。
 
-专用插件的 `access` 三档，翻译成各自 CLI 的权限：`read` 只读，`edit` 只改工作目录（默认），`full` 完整权限、不审批。只读不等于读不到密钥，要隔离密钥请用系统账号或容器。`command` 只传命令参数，不替任意程序限制权限。
+专用插件的 `access` 三档，翻译成各自 CLI 的权限：`read` 只读，`edit` 只改工作目录（默认），`full` 完整权限、不审批。只读不等于读不到密钥，要隔离密钥请用系统账号或容器。`command` 只传命令参数，不替任意程序限制权限。Codex Agent 可在 `mcpToolApproval` 中按 MCP 服务名配置 `auto`、`prompt`、`writes` 或 `approve`；这只覆盖该 Agent 对列出服务的 MCP 工具审批，不会把 Agent 的文件权限提升为 `full`。只有规则明确授权的服务才应配置 `approve`。
 
 浏览器由 Agent 的运行环境提供。Codex 使用后台 `codex exec`，不能假定桌面应用的浏览器连接自动可用；使用该轮实际可用的浏览器工具，或规则、Skill 明确配置的入口。入口只处理网页步骤并接续自己的会话，业务和回执仍由主任务负责。中台不附带浏览器桥接，不安装或授权浏览器工具；接入验收见[插件说明](plugins.md#浏览器接入)。
 

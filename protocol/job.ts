@@ -1,4 +1,4 @@
-import type { Rule } from "../kernel/rules.ts";
+import type { McpToolApproval, Rule } from "../kernel/rules.ts";
 export type Job = {
   run: number;
   token: string;
@@ -15,6 +15,7 @@ export type Job = {
     command?: string[];
     program?: string;
     timeout?: number;
+    mcpToolApproval?: Record<string, McpToolApproval>;
   };
   session: string | null;
   askFirst: string[];

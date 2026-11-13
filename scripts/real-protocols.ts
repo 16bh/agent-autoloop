@@ -63,15 +63,32 @@ try {
   } else {
     writeFileSync(
       process.env.AGENT_AUTOLOOP_RULES,
-      JSON.stringify({ sources: {}, agents: {}, channels: {}, rules: [] }),
+      JSON.stringify({
+        sources: { smoke: { name: "Smoke" } },
+        agents: {
+          smoke: { name: "Smoke", worker: "smoke", use: "command", access: "read", command: ["true"] },
+        },
+        channels: {},
+        rules: [
+          {
+            name: "smoke",
+            when: { source: "smoke", types: ["manual.test"] },
+            to: "smoke",
+            cwd: home,
+            prompt: "Do nothing.",
+          },
+        ],
+      }),
     );
     hub = await import("../host/runtime.ts");
     const { serve } = await import("../host/http.ts");
     server = serve(0);
     await once(server, "listening");
-    let calls = 0;
+    let statusCalls = 0;
+    let runCalls = 0;
     server.on("request", (req: any) => {
-      if (req.url === "/v1/state") calls++;
+      if (req.url === "/v1/state") statusCalls++;
+      if (req.method === "POST" && req.url === "/v1/rules/smoke/run") runCalls++;
     });
     writeFileSync(
       join(home, "config.json"),
@@ -102,15 +119,19 @@ try {
       `mcp_servers.agent_autoloop.args=${JSON.stringify([join(import.meta.dirname, "../bin/agent-autoloop.ts"), "mcp"])}`,
       "-c",
       `mcp_servers.agent_autoloop.env={AGENT_AUTOLOOP_HOME=${JSON.stringify(home)}}`,
-      "必须调用 agent_autoloop 的 status 工具查看状态，然后只回复：状态读取完成。不要调用其他工具。",
+      "-c",
+      'mcp_servers.agent_autoloop.default_tools_approval_mode="approve"',
+      "必须先调用 agent_autoloop 的 status 工具查看状态，再调用 run 工具运行 smoke 规则，然后只回复：状态读取并运行完成。不要调用其他工具。",
     ]);
-    assert.ok(calls > 0);
-    assert.ok(out.includes("状态读取完成"));
+    assert.ok(statusCalls > 0);
+    assert.ok(runCalls > 0);
+    assert.ok(out.includes("状态读取并运行完成"));
     console.log(
       JSON.stringify({
         client: "Codex MCP",
         version: "2025-11-25",
-        statusCalls: calls,
+        statusCalls,
+        runCalls,
         machine: cpus()[0].model,
         ms: Date.now() - start,
       }),

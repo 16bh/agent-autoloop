@@ -13,8 +13,10 @@ export class RulesError extends Error {
 }
 
 const ACCESS = ["read", "edit", "full"];
+const MCP_TOOL_APPROVAL = ["auto", "prompt", "writes", "approve"];
 const TELLS = ["always", "needed", "never"];
 const ID = /^[a-z][a-z0-9-]*$/;
+const MCP_SERVER_ID = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const TYPE_PATTERN = /^(\*|[a-z][a-z0-9_.-]{0,63}(\.\*)?)$/;
 const ASK_FIRST = ["删数据", "停服", "花钱", "对外发消息", "改产品方向", "新建或轮换密钥", "修改权限"];
 const NOT_EMPTY = "不能为空";
@@ -31,6 +33,11 @@ const isSomeWords: Check = (value) => isWords(value) && (value as string[]).leng
 const isId: Check = (value) => typeof value === "string" && ID.test(value);
 const isCount: Check = (value) => Number.isInteger(value) && (value as number) > 0;
 const isTypes: Check = (value) => isSomeWords(value) && (value as string[]).every((type) => TYPE_PATTERN.test(type));
+const isMcpToolApproval: Check = (value) =>
+  isObject(value) &&
+  Object.entries(value).every(
+    ([server, mode]) => MCP_SERVER_ID.test(server) && MCP_TOOL_APPROVAL.includes(mode as string),
+  );
 const isCron: Check = (value) => typeof value === "string" && parseCron(value) !== null;
 // One word, as a client may name a session after the first word of its first message. It leads the prompt, which goes to
 // the Agent's command line as an argument: started with a subject from outside it could be read as an option or command.
@@ -181,6 +188,7 @@ export function parseRules(json: string, now: number, timezone: string): Rules {
       ["program", isText, "要是一个程序的路径", true],
       ["timeout", isCount, "要是正整数（分钟）", true],
       ["maxActive", isCount, "要是正整数", true],
+      ["mcpToolApproval", isMcpToolApproval, "要是 MCP 服务名到审批模式的映射", true],
     ]);
     if (isObject(agent)) agent.access ??= "edit";
   }

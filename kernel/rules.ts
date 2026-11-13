@@ -1,6 +1,7 @@
 // What the kernel reads in rules: their shape and which events a rule takes. The rules file is checked before it gets
 // here, in protocol/rules.ts.
 export type Access = "read" | "edit" | "full";
+export type McpToolApproval = "auto" | "prompt" | "writes" | "approve";
 export type Source = { name: string; adapter?: string };
 type AgentOptions = {
   model?: string;
@@ -9,6 +10,7 @@ type AgentOptions = {
   command?: string[];
   program?: string;
   timeout?: number;
+  mcpToolApproval?: Record<string, McpToolApproval>;
 };
 export type Agent = AgentOptions & { name: string; worker: string; use: string; access: Access; maxActive?: number };
 export type Channel = { name: string; answerers?: string[]; links?: boolean };

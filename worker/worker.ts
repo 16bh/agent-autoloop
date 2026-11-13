@@ -236,6 +236,7 @@ export function createWorker({
       access: agent.access as Turn["access"],
       command: agent.command,
       program: agent.program,
+      mcpToolApproval: agent.mcpToolApproval,
       contextFile: path.join(entry.dir, "context.json"),
       folder: entry.dir,
     };

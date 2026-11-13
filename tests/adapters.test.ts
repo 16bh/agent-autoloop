@@ -284,6 +284,17 @@ test("Codex: access, new and going on", { skip: !stubbed(codex, {}) }, () => {
   assert.ok(!argv.some((part) => part.startsWith("service_tier")), "left to Codex's own config unless the rules say");
 });
 
+test("Codex: MCP tool approval is scoped to configured servers", { skip: !stubbed(codex, {}) }, () => {
+  const argv = stubbed(codex, { mcpToolApproval: { "example-docs": "approve" } })!;
+  assert.ok(argv.includes('approval_policy="never"'));
+  assert.ok(argv.includes('mcp_servers.example-docs.default_tools_approval_mode="approve"'));
+  const plain = stubbed(codex, {})!;
+  assert.equal(
+    plain.some((part) => part.includes("default_tools_approval_mode")),
+    false,
+  );
+});
+
 test("Codex: new and resumed runs use only browser access configured for the background task", () => {
   for (const resume of [null, "thread-1"]) {
     const prompt = codex.command({ ...turn, resume }).at(-1)!;

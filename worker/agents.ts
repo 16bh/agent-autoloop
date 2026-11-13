@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { findOnPath } from "../host/command.ts";
 import { loadPlugin } from "../host/plugins.ts";
+import type { McpToolApproval } from "../kernel/rules.ts";
 import type { Usage } from "../protocol/validate.ts";
 
 export type { Usage } from "../protocol/validate.ts";
@@ -24,6 +25,7 @@ export type Turn = {
   command?: string[];
   /** The program a built-in plugin starts instead of the one it finds: a wrapper that sets things up and runs it. */
   program?: string;
+  mcpToolApproval?: Record<string, McpToolApproval>;
   contextFile: string;
   folder: string;
 };

@@ -66,6 +66,12 @@ test("the fixture loads, with defaults filled in", () => {
   assert.equal(r.rules[1].title, undefined, "no title unless the rule gives one");
 });
 
+test("an agent can configure MCP tool approval for named servers", () => {
+  const r = good();
+  r.agents.a2.mcpToolApproval = { "example-docs": "approve" };
+  assert.deepEqual(parseRules(JSON.stringify(r)).agents.a2.mcpToolApproval, { "example-docs": "approve" });
+});
+
 test("a mistake says which rule and what is wrong", () => {
   problem((r) => {
     r.rules[0].to = "nobody";
@@ -167,6 +173,12 @@ test("a mistake says which rule and what is wrong", () => {
   problem((r) => {
     r.agents.a1.oops = 1;
   }, /Agent a1 有不认识的字段 oops/);
+  problem((r) => {
+    r.agents.a1.mcpToolApproval = { "example-docs": "always" };
+  }, /Agent a1.*mcpToolApproval/);
+  problem((r) => {
+    r.agents.a1.mcpToolApproval = { "example.docs": "approve" };
+  }, /Agent a1.*mcpToolApproval/);
   problem((r) => {
     r.sources.schedule = { name: "x" };
   }, /schedule.*保留/);
