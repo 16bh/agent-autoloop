@@ -464,7 +464,7 @@ function limit(draft: Draft, run: Row, until: number, error: string) {
   }).format(until);
   const words =
     `有 Agent 用量到上限了，${time} 前不再派活给仍受限的 Agent。排着的和这期间新来的活都留着，到时自动接着做。` +
-    `运行 agent-autoloop status 可以查看当前受限项；想提前试，手动运行一条使用它的规则，跑通就接着给它派活。`;
+    `运行 agent-autoloop status 可以查看当前受限项；想提前试，手动运行一条用到受限 Agent 的规则（agent-autoloop run），跑通就接着给它派活。`;
   // Agents on one account are told the same moment: keyed by it, the owner hears of it once.
   notify(draft, `limit:${iso(until)}`, "Agent 用量到上限", words);
 }
